@@ -9,3 +9,5 @@ demo/*.webm
 demo/voiceover.mp3
 demo/raw_video/
 *.log
+
+.vercel

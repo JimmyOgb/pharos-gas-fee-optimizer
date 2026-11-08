@@ -1,0 +1,27 @@
+1
+00:00:01,000 --> 00:00:06,500
+Welcome to the Pharos Gas Fee Optimizer, an autonomous transaction timing sentinel on Pharos Atlantic Testnet.
+
+2
+00:00:07,000 --> 00:00:13,500
+Requirement one: The optimizer tracks network gas prices in real time, calculating min, max, average, and observation history.
+
+3
+00:00:14,000 --> 00:00:20,500
+Requirement two: Users can schedule non-urgent transactions with a target fee ceiling and a forced submission deadline.
+
+4
+00:00:21,000 --> 00:00:27,500
+The deterministic decision engine holds the transaction in the queue while prevailing gas exceeds the configured ceiling.
+
+5
+00:00:28,000 --> 00:00:35,500
+Requirement four: The optimizer never misses a deadline. At deadline expiration, it forces submission even if gas is high.
+
+6
+00:00:36,000 --> 00:00:43,000
+Requirement three: On confirmation, it reports the actual gas paid against the initial estimate, with direct PharosScan links.
+
+7
+00:00:43,500 --> 00:00:50,000
+Production verified and deployed on Vercel at pharos-gas-fee-optimizer.vercel.app.
