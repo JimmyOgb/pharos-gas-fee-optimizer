@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharos Gas Fee Optimizer | Atlantic Testnet</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-orb">⚡</div>
+        <div class="brand-text">
+          <span class="brand-title">PHAROS GAS OPTIMIZER</span>
+          <span class="brand-subtitle">Autonomous Deadline-Aware Fee Sentinel</span>
+        </div>
+      </div>
+      <div class="status-strip">
+        <div class="status-pill network-pill">
+          <span class="status-dot green"></span>
+          <span>Pharos Atlantic (688689)</span>
+        </div>
+        <div class="status-pill mcp-pill" id="mcpBadge" title="Pharos MCP Protocol Status">
+          <span class="status-dot pulse" id="mcpDot"></span>
+          <span id="mcpLabel">MCP: Synced</span>
+        </div>
+        <div class="status-pill block-pill">
+          <span class="label">BLOCK</span>
+          <span class="value" id="latestBlockVal">—</span>
+        </div>
+        <button id="btnConnectWallet" class="btn btn-secondary btn-sm">
+          <span>👛</span> <span id="walletBtnText">Connect Wallet</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-content">
+      <!-- Section 1: Gas Analytics & Telemetry (Req 01) -->
+      <section class="gas-overview-grid">
+        <div class="card metric-card">
+          <div class="metric-top">
+            <span class="metric-title">Current Gas Price</span>
+            <span class="metric-badge accent-badge">Live RPC</span>
+          </div>
+          <div class="metric-val" id="valCurrentGas">— <small>Gwei</small></div>
+          <div class="metric-sub" id="subGasFreshness">Updated just now</div>
+        </div>
+
+        <div class="card metric-card">
+          <div class="metric-top">
+            <span class="metric-title">Base Fee (EIP-1559)</span>
+            <span class="metric-badge">Block Header</span>
+          </div>
+          <div class="metric-val" id="valBaseFee">— <small>Gwei</small></div>
+          <div class="metric-sub">Network minimum burn fee</div>
+        </div>
+
+        <div class="card metric-card">
+          <div class="metric-top">
+            <span class="metric-title">Observed Range (History)</span>
+            <span class="metric-badge">Req 01</span>
+          </div>
+          <div class="metric-val text-sm" id="valGasRange">— / — <small>Gwei</small></div>
+          <div class="metric-sub" id="subAvgGas">Average: — Gwei</div>
+        </div>
+
+        <div class="card metric-card">
+          <div class="metric-top">
+            <span class="metric-title">Active Queue</span>
+            <span class="metric-badge">Req 02 &amp; 04</span>
+          </div>
+          <div class="metric-val accent-cyan" id="valActiveQueueCount">0</div>
+          <div class="metric-sub">Intents held for gas or deadline</div>
+        </div>
+      </section>
+
+      <!-- Section 2: Split Columns — Form & Queue -->
+      <div class="columns-split">
+        <!-- Left: Transaction Scheduling Form (Req 02 & 04) -->
+        <section class="panel form-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Schedule Non-Urgent Transaction</h2>
+              <p class="panel-desc">Set a fee ceiling and forced deadline. The optimizer holds your intent until gas is favorable or deadline triggers.</p>
+            </div>
+          </div>
+
+          <form id="formScheduleIntent" class="intent-form">
+            <div class="form-group">
+              <label for="inputRecipient">Recipient Address (EVM 0x...)</label>
+              <input type="text" id="inputRecipient" placeholder="0x..." required spellcheck="false">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="inputAmount">Amount (PHAROS)</label>
+                <input type="number" step="0.0001" id="inputAmount" placeholder="0.01" value="0.01" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="inputGasLimit">Gas Limit</label>
+                <input type="number" id="inputGasLimit" value="21000" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="inputTargetGas">Fee Ceiling (Target Gwei)</label>
+                <input type="number" step="0.1" id="inputTargetGas" placeholder="e.g. 8.0" value="8.0" required>
+                <small class="field-hint">Current gas: <span id="hintCurrentGas">—</span> Gwei</small>
+              </div>
+              <div class="form-group flex-1">
+                <label for="inputDeadline">Deadline (Seconds from now)</label>
+                <input type="number" id="inputDeadline" placeholder="e.g. 60" value="60" min="5" required>
+                <small class="field-hint">Never misses deadline (Req 04)</small>
+              </div>
+            </div>
+
+            <div class="estimate-box">
+              <div class="estimate-item">
+                <span>Estimated Fee at Request:</span>
+                <strong id="estFeeAtRequest">— PHAROS</strong>
+              </div>
+              <div class="estimate-item">
+                <span>Estimated Fee at Target Ceiling:</span>
+                <strong id="estFeeAtTarget">— PHAROS</strong>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="btnSubmitIntent">
+              <span>⚡</span> Schedule Optimized Intent
+            </button>
+          </form>
+        </section>
+
+        <!-- Right: Recent Gas History Chart / Stream (Req 01) -->
+        <section class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Gas Price Observation Stream</h2>
+              <p class="panel-desc">Real-time genuine gas history on Pharos Atlantic Testnet.</p>
+            </div>
+            <button id="btnRefreshGas" class="btn btn-secondary btn-sm">↻ Refresh</button>
+          </div>
+          <div class="gas-history-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Block</th>
+                  <th>Gas Price</th>
+                  <th>Base Fee</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="gasHistoryTableBody">
+                <tr><td colspan="5" class="loading-cell">Loading gas observations...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- Section 3: Active Optimization Queue & Deadline Watchdog (Req 02, 03, 04) -->
+      <section class="panel queue-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Optimization Queue &amp; Fee Accounting</h2>
+            <p class="panel-desc">Live watchdog tracking deadline expirations, fee comparisons, and explorer transaction links.</p>
+          </div>
+          <div class="queue-actions">
+            <button id="btnForceWatchdogTick" class="btn btn-secondary btn-sm">
+              <span>⏱</span> Evaluate Queue Now
+            </button>
+          </div>
+        </div>
+
+        <div class="intent-cards-container" id="intentCardsContainer">
+          <div class="empty-state">No transaction intents scheduled yet. Create an intent above to start optimization.</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Built for <strong>Pharos Agent Arena</strong> (Gas Fee Optimizer)</span>
+      <span>Network: <strong>Pharos Atlantic (688689)</strong></span>
+      <span>Explorer: <a href="https://atlantic.pharosscan.xyz" target="_blank" rel="noopener">atlantic.pharosscan.xyz</a></span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
